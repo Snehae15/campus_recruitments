@@ -53,7 +53,11 @@ class _AppliedJobsState extends State<AppliedJobs> {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
+                  print('Error: ${snapshot.error}');
                   return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (snapshot.data == null) {
+                  print('Data is null');
+                  return Center(child: Text('No data available'));
                 } else {
                   List<QueryDocumentSnapshot> appliedJobs =
                       snapshot.data as List<QueryDocumentSnapshot>;
