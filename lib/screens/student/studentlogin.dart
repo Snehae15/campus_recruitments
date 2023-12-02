@@ -1,14 +1,10 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:campus_recruitment/screens/student/bottom%20navigation.dart';
 import 'package:campus_recruitment/screens/student/student_signup.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class StudentLogIn extends StatefulWidget {
-  const StudentLogIn({
-    super.key,
-  });
+  const StudentLogIn({Key? key}) : super(key: key);
 
   @override
   State<StudentLogIn> createState() => _StudentLogInState();
@@ -20,6 +16,7 @@ class _StudentLogInState extends State<StudentLogIn> {
   TextEditingController userPasswordController = TextEditingController();
   bool obscurePassword = true; // Initially obscure the password
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,12 +113,6 @@ class _StudentLogInState extends State<StudentLogIn> {
 
                           if (isLoginSuccessful) {
                             _showSuccessSnackBar("Login successful!");
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const BottomNavigation(),
-                              ),
-                            );
                           } else {
                             _showErrorSnackBar("Invalid email or password");
                           }
@@ -214,6 +205,25 @@ class _StudentLogInState extends State<StudentLogIn> {
     }
   }
 
+  Future<String?> getCurrentUserId() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        // If the user is not null, return the user ID
+        return user.uid;
+      } else {
+        // If the user is null, handle accordingly (e.g., user not signed in)
+        print('No user signed in');
+        return null;
+      }
+    } catch (e) {
+      // Handle exceptions
+      print('Error getting user ID: $e');
+      return null;
+    }
+  }
+
   void _showErrorSnackBar(String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -236,8 +246,22 @@ class _StudentLogInState extends State<StudentLogIn> {
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: 'OK',
-          onPressed: () {
+          onPressed: () async {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+            // After hiding the snack bar, you can get the user ID
+            String? userId = await getCurrentUserId();
+            if (userId != null) {
+              print('User ID: $userId');
+
+              // Navigate to the BottomNavigation screen
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BottomNavigation(),
+                ),
+              );
+            }
           },
         ),
       ),

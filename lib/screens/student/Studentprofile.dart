@@ -2,6 +2,7 @@ import 'package:campus_recruitment/screens/student/appliedjobs.dart';
 import 'package:campus_recruitment/screens/student/personaldetails.dart';
 import 'package:campus_recruitment/screens/student/student%20profile2.dart';
 import 'package:campus_recruitment/screens/student/studentqualificatio.dart';
+import 'package:campus_recruitment/screens/student/studentviewresume.dart';
 import 'package:campus_recruitment/screens/student/viewskills.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -195,33 +196,33 @@ class _StudentProfileState extends State<StudentProfile> {
                           ),
                         ),
                       ),
-                      // GestureDetector(
-                      //   onTap: () {
-                      //     Navigator.push(
-                      //       context,
-                      //       MaterialPageRoute(
-                      //         builder: (context) => const StudentViewResume(
-                      //           resumeUrl: '',
-                      //         ),
-                      //       ),
-                      //     );
-                      //   },
-                      //   child: const Card(
-                      //     color: Color(0xFFD3D3D3),
-                      //     child: ListTile(
-                      //       leading: Icon(Icons.contact_page_outlined,
-                      //           color: Colors.blue),
-                      //       title: Text(
-                      //         'Resume',
-                      //         textScaleFactor: 1.5,
-                      //       ),
-                      //       trailing: Icon(
-                      //         Icons.keyboard_arrow_right,
-                      //         color: Colors.blue,
-                      //       ),
-                      //     ),
-                      //   ),
-                      // ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const StudentViewResume(
+                                resumeUrl: '',
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Card(
+                          color: Color(0xFFD3D3D3),
+                          child: ListTile(
+                            leading: Icon(Icons.contact_page_outlined,
+                                color: Colors.blue),
+                            title: Text(
+                              'Resume',
+                              textScaleFactor: 1.5,
+                            ),
+                            trailing: Icon(
+                              Icons.keyboard_arrow_right,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ),
                       // View Applied jobs Card
                       GestureDetector(
                         onTap: () {

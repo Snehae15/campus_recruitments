@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AppliedJobs extends StatefulWidget {
@@ -9,11 +10,33 @@ class AppliedJobs extends StatefulWidget {
 }
 
 class _AppliedJobsState extends State<AppliedJobs> {
-  String userId =
-      "userId"; // Replace with your actual way of getting the user ID
+  late String userId;
+
+  @override
+  void initState() {
+    super.initState();
+    getCurrentUserId();
+  }
+
+  void getCurrentUserId() {
+    FirebaseAuth auth = FirebaseAuth.instance;
+    User? user = auth.currentUser;
+
+    if (user != null) {
+      setState(() {
+        userId = user.uid;
+      });
+    } else {
+      print('User not signed in');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (userId == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -48,16 +71,14 @@ class _AppliedJobsState extends State<AppliedJobs> {
           children: [
             // All Jobs Tab
             FutureBuilder(
-              future: getAppliedJobs(userId),
+              future: getPendingJobs(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
-                  print('Error: ${snapshot.error}');
                   return Center(child: Text('Error: ${snapshot.error}'));
                 } else if (snapshot.data == null) {
-                  print('Data is null');
-                  return Center(child: Text('No data available'));
+                  return const Center(child: Text('No data available'));
                 } else {
                   List<QueryDocumentSnapshot> appliedJobs =
                       snapshot.data as List<QueryDocumentSnapshot>;
@@ -80,7 +101,7 @@ class _AppliedJobsState extends State<AppliedJobs> {
               },
             ),
             // Completed Tab
-            Center(
+            const Center(
               child: Text(
                 "Completed",
                 style: TextStyle(fontSize: 30, color: Colors.black),
@@ -92,12 +113,13 @@ class _AppliedJobsState extends State<AppliedJobs> {
     );
   }
 
-  Future<List<QueryDocumentSnapshot>> getAppliedJobs(String userId) async {
+  Future<List<QueryDocumentSnapshot>> getPendingJobs(String userId) async {
     FirebaseFirestore firestore = FirebaseFirestore.instance;
 
     QuerySnapshot querySnapshot = await firestore
         .collection('applied_jobs')
         .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'pending')
         .get();
 
     return querySnapshot.docs;
