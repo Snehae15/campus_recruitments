@@ -1,7 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class CompanyViewStudentProfile extends StatefulWidget {
-  const CompanyViewStudentProfile({super.key});
+  final String username;
+  final String jobName;
+  final String userId;
+
+  const CompanyViewStudentProfile({
+    Key? key,
+    required this.username,
+    required this.jobName,
+    required this.userId,
+  }) : super(key: key);
 
   @override
   State<CompanyViewStudentProfile> createState() =>
@@ -11,12 +21,51 @@ class CompanyViewStudentProfile extends StatefulWidget {
 class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
   var dob = TextEditingController();
   var phone_number = TextEditingController();
-  var age = TextEditingController();
   var gender = TextEditingController();
   var experience = TextEditingController();
   var qualification = TextEditingController();
   var certification = TextEditingController();
   var skills = TextEditingController();
+  var field = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserDetails();
+  }
+
+  Future<void> fetchUserDetails() async {
+    try {
+      // Check if userId is not null or empty
+      if (widget.userId.isNotEmpty) {
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .get();
+
+        if (userSnapshot.exists) {
+          final userData = userSnapshot.data() as Map<String, dynamic>;
+
+          setState(() {
+            dob.text = userData['dob'] ?? '';
+            phone_number.text = userData['phoneNumber'] ?? '';
+            gender.text = userData['gender'] ?? '';
+            experience.text = userData['experience'] ?? '';
+            qualification.text = userData['qualification'] ?? '';
+            certification.text = userData['certification'] ?? '';
+            skills.text = userData['skills'] ?? '';
+            field.text = userData['field'] ?? '';
+          });
+        } else {
+          print('User with ID ${widget.userId} not found');
+        }
+      } else {
+        print('userId is null or empty');
+      }
+    } catch (error) {
+      print('Error fetching user details: $error');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,19 +86,15 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
                     ),
                   ),
                 ),
-                const Text(
-                  'Studentname',
+                Text(
+                  widget.username,
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
                     fontSize: 30,
                   ),
                 ),
                 const Text(
-                  'post',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const Text(
-                  'emailid ',
+                  'email',
                   style: TextStyle(color: Colors.grey),
                 ),
                 Padding(
@@ -65,7 +110,6 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
                 Padding(
                   padding: const EdgeInsets.all(15.0),
                   child: TextFormField(
-                    readOnly: true,
                     controller: phone_number,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(
@@ -76,20 +120,18 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
                 Padding(
                   padding: const EdgeInsets.all(15.0),
                   child: TextFormField(
-                    readOnly: true,
                     controller: gender,
                     decoration: InputDecoration(
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
                         hintText: 'Gender'),
                   ),
-                )
+                ),
               ],
             ),
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: TextFormField(
-                readOnly: true,
                 controller: experience,
                 decoration: InputDecoration(
                     border: OutlineInputBorder(
@@ -100,7 +142,6 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: TextFormField(
-                readOnly: true,
                 controller: qualification,
                 decoration: InputDecoration(
                     border: OutlineInputBorder(
@@ -111,7 +152,6 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: TextFormField(
-                readOnly: true,
                 controller: certification,
                 decoration: InputDecoration(
                     border: OutlineInputBorder(
@@ -122,12 +162,21 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
             Padding(
               padding: const EdgeInsets.all(15.0),
               child: TextFormField(
-                readOnly: true,
                 controller: skills,
                 decoration: InputDecoration(
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10)),
                     hintText: 'Skills'),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                controller: field,
+                decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    hintText: 'Field'),
               ),
             ),
             Row(
@@ -136,24 +185,28 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
                 Padding(
                   padding: const EdgeInsets.all(15.0),
                   child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10))),
-                      child: const Text('View Resume')),
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('View Resume'),
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(15.0),
                   child: ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10))),
-                      child: const Text('ShortList')),
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.purple,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10))),
+                    child: const Text('ShortList'),
+                  ),
                 ),
               ],
             ),
@@ -162,10 +215,12 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
               child: ElevatedButton(
                   onPressed: () {},
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10))),
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   child: const Text('Reject')),
             ),
           ],

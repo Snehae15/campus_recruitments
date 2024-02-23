@@ -1,138 +1,89 @@
-// import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// class SavedJobs extends StatefulWidget {
-//   const SavedJobs({
-//     Key? key,
-//     required this.savedJobs,
-//   }) : super(key: key);
+class SavedJobs extends StatefulWidget {
+  const SavedJobs({
+    Key? key,
+    required this.savedJobs,
+    required String userid,
+  }) : super(key: key);
 
-//   final List<Map<String, String>> savedJobs;
+  final List<Map<String, String>> savedJobs;
 
-//   @override
-//   _SavedJobsState createState() => _SavedJobsState();
-// }
+  @override
+  _SavedJobsState createState() => _SavedJobsState();
+}
 
-// class _SavedJobsState extends State<SavedJobs> {
-//   @override
-//   Widget build(BuildContext context) {
-//     // Replace 'loggedInUsername' and 'loggedInUserEmail' with actual user information
-//     List<Map<String, String>> userSavedJobs = widget.savedJobs
-//         .where((job) =>
-//             job['username'] == 'loggedInUsername' &&
-//             job['email'] == 'loggedInUserEmail')
-//         .toList();
+class _SavedJobsState extends State<SavedJobs> {
+  List<Map<String, dynamic>> savedJobsList = [];
 
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("Saved Job Details"),
-//       ),
-//       body: Column(
-//         children: userSavedJobs.map(buildCard).toList(),
-//       ),
-//     );
-//   }
+  @override
+  void initState() {
+    super.initState();
+    getSavedJobs();
+  }
 
-//   Widget buildCard(Map<String, String> jobDetails) {
-//     String companyname = jobDetails['companyname'] ?? '';
-//     String companyaddress = jobDetails['address'] ?? '';
-//     String jobTitle = jobDetails['jobTitle'] ?? '';
-//     String field = jobDetails['field'] ?? '';
-//     String schedule = jobDetails['schedule'] ?? '';
-//     String jobType = jobDetails['jobType'] ?? '';
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Saved Job Details"),
+      ),
+      body: savedJobsList.isEmpty
+          ? const Center(
+              child: Text('No Saved jobs'),
+            )
+          : ListView.builder(
+              itemCount: savedJobsList.length,
+              itemBuilder: (context, index) {
+                Map<String, dynamic> jobData = savedJobsList[index];
+                return ListTile(
+                  title: Text(jobData['jobTitle']),
+                  subtitle: Text(jobData['companyname']),
+                );
+              },
+            ),
+    );
+  }
 
-//     return Card(
-//       margin: const EdgeInsets.all(10),
-//       child: Padding(
-//         padding: const EdgeInsets.all(20),
-//         child: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             // First Row: Image, Company Name, Place, Save Button
-//             Row(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 // Image
-//                 Container(
-//                   width: 40,
-//                   height: 40,
-//                   decoration: BoxDecoration(
-//                     image: const DecorationImage(
-//                       image: AssetImage(
-//                           'assets/google.png'), // Replace with your image path
-//                       fit: BoxFit.cover,
-//                     ),
-//                     borderRadius: BorderRadius.circular(8),
-//                   ),
-//                 ),
-//                 const Expanded(
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         companyname,
-//                         style: TextStyle(
-//                           fontWeight: FontWeight.bold,
-//                           fontSize: 18,
-//                         ),
-//                       ),
-//                       Text(address),
-//                     ],
-//                   ),
-//                 ),
+  Future<void> getSavedJobs() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+    if (userId == null) {
+      print('User ID not found in SharedPreferences');
+      return;
+    }
+    try {
+      QuerySnapshot savedJobsSnapshot = await FirebaseFirestore.instance
+          .collection('saved_jobs')
+          .where('userId', isEqualTo: userId)
+          .get();
 
-//                 // Save Button as Icon
-//                 IconButton(
-//                   onPressed: () {
-//                     // Handle save button tap
-//                   },
-//                   icon: const Icon(Icons.save),
-//                 ),
-//               ],
-//             ),
+      for (var savedJobDoc in savedJobsSnapshot.docs) {
+        String jobId = savedJobDoc.id;
+        DocumentSnapshot jobSnapshot = await FirebaseFirestore.instance
+            .collection('jobs')
+            .doc(jobId)
+            .get();
+        if (jobSnapshot.exists) {
+          Map<String, dynamic> jobData = {
+            'jobTitle': jobSnapshot['jobTitle'],
+            'companyname': jobSnapshot['companyname'],
+          };
 
-//             // Second Row: Job Heading, Post, Time Schedule, Job Type
-//             const SizedBox(height: 10), // Add some space between rows
-//             Row(
-//               crossAxisAlignment: CrossAxisAlignment.start,
-//               children: [
-//                 // Job Heading
-//                 Expanded(
-//                   child: Column(
-//                     crossAxisAlignment: CrossAxisAlignment.start,
-//                     children: [
-//                       Text(
-//                         jobTitle,
-//                         style: const TextStyle(
-//                           fontWeight: FontWeight.bold,
-//                           fontSize: 16,
-//                         ),
-//                       ),
-//                       const SizedBox(
-//                           height:
-//                               5), // Add some space between heading and other details
-
-//                       // Other details with dotted pointers
-//                       Row(
-//                         children: [
-//                           Text(field),
-//                           const SizedBox(width: 5),
-//                           const Icon(Icons.fiber_manual_record, size: 8),
-//                           const SizedBox(width: 5),
-//                           Text(schedule),
-//                           const SizedBox(width: 5),
-//                           const Icon(Icons.fiber_manual_record, size: 8),
-//                           const SizedBox(width: 5),
-//                           Text(jobType),
-//                         ],
-//                       ),
-//                     ],
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
+          if (!savedJobsList.any((job) =>
+              job['jobTitle'] == jobData['jobTitle'] &&
+              job['companyname'] == jobData['companyname'])) {
+            savedJobsList.add(jobData);
+          }
+        } else {
+          print('Job with ID $jobId not found');
+        }
+      }
+      setState(() {});
+    } catch (e) {
+      print('Error fetching saved jobs: $e');
+    }
+  }
+}

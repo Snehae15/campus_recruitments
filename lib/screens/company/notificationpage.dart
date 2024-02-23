@@ -1,15 +1,26 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class NotificationPage extends StatefulWidget {
+  // final String companyId; // Add companyId as a parameter
   const NotificationPage({
-    super.key,
-  });
+    Key? key,
+  }) : super(key: key);
 
   @override
   State<NotificationPage> createState() => _NotificationPageState();
 }
 
 class _NotificationPageState extends State<NotificationPage> {
+  late Stream<QuerySnapshot> _applicationsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _applicationsStream =
+        FirebaseFirestore.instance.collection('applied_jobs').snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,32 +52,56 @@ class _NotificationPageState extends State<NotificationPage> {
               ),
             ),
             const SizedBox(height: 20),
-            for (int i = 0; i < 10; i++) // Displaying only 3 cards for brevity
-              const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Icon(
-                        Icons.wallet,
-                        color: Colors.purpleAccent,
-                      ),
-                    ),
-                    title: Text('Students wants to Apply!'),
-                    subtitle: Row(
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Icon(
-                            Icons.alarm,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            StreamBuilder<QuerySnapshot>(
+              stream: _applicationsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else {
+                  final documents = snapshot.data!.docs;
+                  return Column(
+                    children: documents.map((doc) {
+                      final username = doc['username'];
+                      final jobId = doc['jobId'];
+                      return FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection('jobs')
+                            .doc(jobId)
+                            .get(),
+                        builder: (context, jobSnapshot) {
+                          if (jobSnapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return CircularProgressIndicator();
+                          } else if (jobSnapshot.hasError) {
+                            return Text('Error: ${jobSnapshot.error}');
+                          } else {
+                            final jobName = jobSnapshot.data!['jobName'];
+                            return Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Card(
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    child: Icon(
+                                      Icons.wallet,
+                                      color: Colors.purpleAccent,
+                                    ),
+                                  ),
+                                  title: Text('$username applied to $jobName'),
+                                  // subtitle:
+                                  // Text('Company: ${widget.companyId}'),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }).toList(),
+                  );
+                }
+              },
+            ),
           ],
         ),
       ),

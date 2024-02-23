@@ -172,6 +172,10 @@ class _Jobpost1State extends State<Jobpost1> {
                     if (_formKey.currentState!.validate()) {
                       User? user = _auth.currentUser;
                       if (user != null) {
+                        String jobId = _firestore
+                            .collection('jobs')
+                            .doc()
+                            .id; // Generate a unique jobId
                         DocumentSnapshot companySnapshot = await _firestore
                             .collection('companies')
                             .doc(user.uid)
@@ -194,6 +198,7 @@ class _Jobpost1State extends State<Jobpost1> {
 
                             // Prepare job data
                             Map<String, dynamic> jobData = {
+                              'jobId': jobId, // Add jobId
                               'companyId': user.uid,
                               'companyname': companyname,
                               'address': address,
@@ -207,14 +212,13 @@ class _Jobpost1State extends State<Jobpost1> {
                               // Add more fields as needed
                             };
 
-                            DocumentReference docRef = await _firestore
-                                .collection('jobs')
-                                .add(jobData);
+                            await _firestore.collection('jobs').doc(jobId).set(
+                                jobData); // Store job data with jobId in Firestore
 
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => Jobpost2(docRef.id),
+                                builder: (context) => Jobpost2(jobId),
                               ),
                             );
                           } else {

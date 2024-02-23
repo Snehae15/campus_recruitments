@@ -2,6 +2,7 @@ import 'package:campus_recruitment/screens/student/bottom%20navigation.dart';
 import 'package:campus_recruitment/screens/student/student_signup.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentLogIn extends StatefulWidget {
   const StudentLogIn({Key? key}) : super(key: key);
@@ -25,159 +26,156 @@ class _StudentLogInState extends State<StudentLogIn> {
           padding: const EdgeInsets.all(15.0),
           child: Padding(
             padding: const EdgeInsets.only(top: 80.0),
-            child: Container(
-              child: Form(
-                key: _formkey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Image.asset(
-                      "assets/login.png",
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height / 2.9,
+            child: Form(
+              key: _formkey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Image.asset(
+                    "assets/login.png",
+                    width: MediaQuery.of(context).size.width,
+                    height: MediaQuery.of(context).size.height / 2.9,
+                  ),
+                  const SizedBox(
+                    height: 70.0,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 3.0),
+                    margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
                     ),
-                    const SizedBox(
-                      height: 70.0,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 3.0),
-                      margin: const EdgeInsets.symmetric(horizontal: 20.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(15),
+                    child: TextFormField(
+                      controller: emailController,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please Enter Email';
+                        }
+                        return null;
+                      },
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Email',
+                        hintStyle: TextStyle(color: Colors.black),
                       ),
-                      child: TextFormField(
-                        controller: emailController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please Enter Email';
-                          }
-                          return null;
-                        },
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: 'Email',
-                          hintStyle: TextStyle(color: Colors.black),
-                        ),
-                        style: const TextStyle(color: Colors.black),
-                      ),
+                      style: const TextStyle(color: Colors.black),
                     ),
-                    const SizedBox(
-                      height: 10.0,
+                  ),
+                  const SizedBox(
+                    height: 10.0,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 3.0),
+                    margin: const EdgeInsets.symmetric(horizontal: 20.0),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(vertical: 3.0),
-                      margin: const EdgeInsets.symmetric(horizontal: 20.0),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: TextFormField(
-                        controller: userPasswordController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please Enter Password';
-                          }
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          hintText: 'Password',
-                          hintStyle: const TextStyle(color: Colors.black),
-                          suffixIcon: GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                obscurePassword = !obscurePassword;
-                              });
-                            },
-                            child: Icon(
-                              obscurePassword
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Colors.black,
-                            ),
+                    child: TextFormField(
+                      controller: userPasswordController,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please Enter Password';
+                        }
+                        return null;
+                      },
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        hintText: 'Password',
+                        hintStyle: const TextStyle(color: Colors.black),
+                        suffixIcon: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              obscurePassword = !obscurePassword;
+                            });
+                          },
+                          child: Icon(
+                            obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Colors.black,
                           ),
                         ),
-                        style: const TextStyle(color: Colors.black),
-                        obscureText: obscurePassword,
                       ),
+                      style: const TextStyle(color: Colors.black),
+                      obscureText: obscurePassword,
                     ),
-                    const SizedBox(
-                      height: 15.0,
-                    ),
-                    GestureDetector(
-                      onTap: () async {
-                        if (_formkey.currentState!.validate()) {
-                          bool isLoginSuccessful = await authenticateUser(
+                  ),
+                  const SizedBox(
+                    height: 15.0,
+                  ),
+                  GestureDetector(
+                    onTap: () async {
+                      if (_formkey.currentState!.validate()) {
+                        bool isLoginSuccessful = await authenticateUser(
                             emailController.text,
                             userPasswordController.text,
-                          );
+                            context);
 
-                          if (isLoginSuccessful) {
-                            _showSuccessSnackBar("Login successful!");
-                          } else {
-                            _showErrorSnackBar("Invalid email or password");
-                          }
+                        if (isLoginSuccessful) {
+                          _showSuccessSnackBar("Login successful!");
+                        } else {
+                          _showErrorSnackBar("Invalid email or password");
                         }
-                      },
-                      child: Center(
-                        child: Container(
-                          width: 360,
-                          height: 55,
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "Login",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20.0,
-                                fontWeight: FontWeight.bold,
-                              ),
+                      }
+                    },
+                    child: Center(
+                      child: Container(
+                        width: 360,
+                        height: 55,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Login",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20.0,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(
-                      height: 15.0,
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(10.0),
-                          child: Text(
-                            "Don't have an Account? Create one using",
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 15.0),
-                          ),
+                  ),
+                  const SizedBox(
+                    height: 15.0,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: Text(
+                          "Don't have an Account?",
+                          style: TextStyle(color: Colors.black, fontSize: 10.0),
                         ),
-                        const SizedBox(
-                          width: 5.0,
+                      ),
+                      const SizedBox(
+                        width: 5.0,
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SignUp(),
+                            ),
+                          );
+                        },
+                        child: const Text(
+                          "Signup",
+                          style: TextStyle(
+                              color: Colors.blue,
+                              fontSize: 15.0,
+                              fontWeight: FontWeight.bold),
                         ),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SignUp(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            " Signup",
-                            style: TextStyle(
-                                color: Colors.blue,
-                                fontSize: 15.0,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
@@ -186,12 +184,27 @@ class _StudentLogInState extends State<StudentLogIn> {
     );
   }
 
-  Future<bool> authenticateUser(String email, String password) async {
+  Future<bool> authenticateUser(String email, String password, context) async {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
+      String? userId = await getCurrentUserId();
+      if (userId != null) {
+        print('User ID: $userId');
 
-      // If the above line doesn't throw an exception, the login is successful.
+        // Store user ID to SharedPreferences
+        await saveUserIdToPrefs(userId);
+
+        // Navigate to the BottomNavigation screen if the widget is still mounted
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const StudentBottomNavigation(),
+              ),
+              (route) => false);
+        }
+      }
+
       return true;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'wrong-password') {
@@ -224,6 +237,11 @@ class _StudentLogInState extends State<StudentLogIn> {
     }
   }
 
+  Future<void> saveUserIdToPrefs(String userId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userId', userId);
+  }
+
   void _showErrorSnackBar(String errorMessage) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -243,25 +261,11 @@ class _StudentLogInState extends State<StudentLogIn> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        duration: const Duration(seconds: 3),
+        duration: const Duration(seconds: 2),
         action: SnackBarAction(
           label: 'OK',
           onPressed: () async {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-            // After hiding the snack bar, you can get the user ID
-            String? userId = await getCurrentUserId();
-            if (userId != null) {
-              print('User ID: $userId');
-
-              // Navigate to the BottomNavigation screen
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BottomNavigation(),
-                ),
-              );
-            }
           },
         ),
       ),

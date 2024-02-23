@@ -33,10 +33,7 @@ class _AppliedJobsState extends State<AppliedJobs> {
 
   @override
   Widget build(BuildContext context) {
-    if (userId == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
+    print(userId);
     return DefaultTabController(
       length: 2,
       child: Scaffold(
@@ -51,7 +48,7 @@ class _AppliedJobsState extends State<AppliedJobs> {
               ),
               Tab(
                 child: Text(
-                  "Completed",
+                  "Shotlisted/Completed",
                   style: TextStyle(color: Colors.blue),
                 ),
               ),
@@ -73,6 +70,7 @@ class _AppliedJobsState extends State<AppliedJobs> {
             FutureBuilder(
               future: getPendingJobs(userId),
               builder: (context, snapshot) {
+                print('///////////FUTURE BUILDER : $userId///////////');
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 } else if (snapshot.hasError) {
@@ -82,30 +80,80 @@ class _AppliedJobsState extends State<AppliedJobs> {
                 } else {
                   List<QueryDocumentSnapshot> appliedJobs =
                       snapshot.data as List<QueryDocumentSnapshot>;
-                  return ListView.builder(
-                    itemCount: appliedJobs.length,
-                    itemBuilder: (context, index) {
-                      var jobData =
-                          appliedJobs[index].data() as Map<String, dynamic>;
-                      return Card(
-                        child: ListTile(
-                          title: Text(jobData['jobTitle']),
-                          subtitle: Text(
-                            'Company: ${jobData['companyname']}\nStatus: ${jobData['status']}',
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                    ),
+                    child: ListView.builder(
+                      itemCount: appliedJobs.length,
+                      itemBuilder: (context, index) {
+                        var jobData =
+                            appliedJobs[index].data() as Map<String, dynamic>;
+                        return Card(
+                          child: ListTile(
+                            title: Text(jobData['jobName']),
+                            subtitle: Text(
+                              'Company: ${jobData['companyname']}\nStatus: ${jobData['status']}',
+                            ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   );
                 }
               },
             ),
             // Completed Tab
-            const Center(
-              child: Text(
-                "Completed",
-                style: TextStyle(fontSize: 30, color: Colors.black),
-              ),
+            FutureBuilder(
+              future: getCompletedJobs(userId),
+              builder: (context, snapshot) {
+                print('///////////FUTURE BUILDER : $userId///////////');
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else if (snapshot.data == null) {
+                  return const Center(child: Text('No data available'));
+                } else {
+                  List<QueryDocumentSnapshot> appliedJobs =
+                      snapshot.data as List<QueryDocumentSnapshot>;
+
+                  List<String> length = [];
+                  for (var i in appliedJobs) {
+                    if (i["status"] != "shortlisted") {
+                      length.add(i["status"]);
+                    }
+                  }
+                  print(length.length);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                    ),
+                    child: ListView.builder(
+                      itemCount: length.length,
+                      itemBuilder: (context, index) {
+                        Map<String, dynamic> dataa = {};
+                        if (appliedJobs[index]["status"] != "shortlisted") {
+                          dataa =
+                              appliedJobs[index].data() as Map<String, dynamic>;
+                        }
+
+                        return Card(
+                          child: ListTile(
+                            title: dataa['jobName'] == null
+                                ? Text("Job not found")
+                                : Text(dataa['jobName']),
+                            subtitle: Text(
+                              'Company: ${dataa['companyname']}\nStatus: ${dataa['status']}',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -114,14 +162,30 @@ class _AppliedJobsState extends State<AppliedJobs> {
   }
 
   Future<List<QueryDocumentSnapshot>> getPendingJobs(String userId) async {
+    print('//////////FETCHING JOBS///////////////////');
     FirebaseFirestore firestore = FirebaseFirestore.instance;
 
     QuerySnapshot querySnapshot = await firestore
         .collection('applied_jobs')
         .where('userId', isEqualTo: userId)
-        .where('status', isEqualTo: 'pending')
+        .where('status', isEqualTo: 'applied')
         .get();
 
+    print('//////////FETCHING JOBS COMPLETED///////////////////');
+    return querySnapshot.docs;
+  }
+
+  Future<List<QueryDocumentSnapshot>> getCompletedJobs(String userId) async {
+    print('//////////FETCHING JOBS///////////////////');
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    QuerySnapshot querySnapshot = await firestore
+        .collection('applied_jobs')
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'shortlisted')
+        .get();
+
+    print('//////////FETCHING JOBS COMPLETED///////////////////');
     return querySnapshot.docs;
   }
 }

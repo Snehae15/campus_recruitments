@@ -114,7 +114,6 @@ class _StudentProfileState extends State<StudentProfile> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          // Navigate to the next page when the card is tapped
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -202,7 +201,7 @@ class _StudentProfileState extends State<StudentProfile> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => const StudentViewResume(
-                                resumeUrl: '',
+                                userId: '',
                               ),
                             ),
                           );

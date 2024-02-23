@@ -14,6 +14,7 @@ class _ShortListCandidatesState extends State<ShortListCandidates> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shortlisted Candidates'),
+        backgroundColor: Colors.purple, // Set app bar background color
       ),
       body: StreamBuilder(
         stream: FirebaseFirestore.instance
@@ -45,10 +46,19 @@ class _ShortListCandidatesState extends State<ShortListCandidates> {
               var username = shortlistedCandidates[index]['username'];
               var jobName = shortlistedCandidates[index]['jobName'];
 
-              return ListTile(
-                title: Text(username),
-                subtitle: Text(jobName),
-                // Add any other details you want to display here
+              return Card(
+                elevation: 3, // Add elevation for a card-like effect
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ListTile(
+                  title: Text(
+                    username,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(jobName),
+                ),
               );
             },
           );

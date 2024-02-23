@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:campus_recruitment/screens/company/CompanyEdit Profile.dart';
 import 'package:campus_recruitment/screens/company/CompanyShowProfile.dart';
 import 'package:campus_recruitment/screens/company/auth_service.dart';
@@ -8,9 +6,7 @@ import 'package:campus_recruitment/screens/company/notificationpage.dart';
 import 'package:campus_recruitment/screens/company/viewshortlisted.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 class Company {
   final String companyname;
@@ -30,7 +26,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
   final AuthService _authService = AuthService();
   User? _user;
   late Company _company;
-  File? _pickedImage;
   bool _isLoading = false;
 
   @override
@@ -40,7 +35,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       setState(() {
         _user = user;
         if (user != null) {
-          // Fetch company details from Firestore
           _fetchCompanyDetails(user.uid);
         }
       });
@@ -49,6 +43,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
 
   void _fetchCompanyDetails(String userId) async {
     try {
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
       });
@@ -59,6 +54,7 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
           .get();
 
       if (snapshot.exists) {
+        if (!mounted) return;
         setState(() {
           _company = Company(
             companyname: snapshot.get('companyname'),
@@ -69,56 +65,11 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
     } catch (e) {
       print('Error fetching company details: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      setState(() {
-        _pickedImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  Future<void> _saveImageToFirebase() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-      if (_pickedImage != null) {
-        // Upload image to Firebase Storage
-        final Reference storageRef =
-            FirebaseStorage.instance.ref().child('user_logos/${_user!.uid}');
-        await storageRef.putFile(_pickedImage!);
-
-        // Get the download URL
-        final String downloadURL = await storageRef.getDownloadURL();
-
-        // Update userlogo field in Firestore
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(_user!.uid)
-            .update({'userlogo': downloadURL});
-
-        // Show a success message or navigate to another page
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Image saved successfully!'),
-          ),
-        );
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
-    } catch (e) {
-      print('Error saving image: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -130,33 +81,27 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
       ),
       body: Center(
         child: _isLoading
-            ? CircularProgressIndicator() // Show loading indicator if isLoading is true
+            ? CircularProgressIndicator()
             : Padding(
                 padding: const EdgeInsets.only(top: 50.0),
                 child: Column(
                   children: [
-                    // Center profile icon with image picker
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: CircleAvatar(
-                        radius: 80,
-                        backgroundColor: Colors.grey,
-                        child: _pickedImage != null
-                            ? ClipOval(
-                                child: Image.file(
-                                  _pickedImage!,
-                                  width: 160,
-                                  height: 160,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : Icon(
-                                Icons.business,
-                                size: 80,
-                                color: Colors.white,
-                              ),
+                    // Display company profile image from Firebase Storage
+                    if (_user != null)
+                      FutureBuilder<String>(
+                        future: _getCompanyProfileImageUrl(_user!.uid),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                                  ConnectionState.waiting ||
+                              !snapshot.hasData) {
+                            return CircularProgressIndicator();
+                          }
+                          return CircleAvatar(
+                            radius: 80,
+                            backgroundImage: NetworkImage(snapshot.data!),
+                          );
+                        },
                       ),
-                    ),
                     const SizedBox(height: 30),
                     if (_user != null)
                       Column(
@@ -171,7 +116,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                     else
                       const Text('Not logged in'),
 
-                    // Buttons row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
@@ -214,7 +158,6 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
                       ],
                     ),
 
-                    // Cards section
                     Card(
                       child: ListTile(
                         leading: const Icon(Icons.notifications),
@@ -262,5 +205,17 @@ class _CompanyProfilePageState extends State<CompanyProfilePage> {
               ),
       ),
     );
+  }
+
+  Future<String> _getCompanyProfileImageUrl(String userId) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('companies')
+        .doc(userId)
+        .get();
+    if (snapshot.exists) {
+      return snapshot.get('profileImageUrl');
+    } else {
+      return ''; // Return empty string if no profile image found
+    }
   }
 }

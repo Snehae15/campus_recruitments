@@ -4,16 +4,17 @@ import 'package:campus_recruitment/screens/student/settings.dart';
 import 'package:campus_recruitment/screens/student/student_home.dart';
 import 'package:flutter/material.dart';
 
-class BottomNavigation extends StatefulWidget {
-  const BottomNavigation({
+class StudentBottomNavigation extends StatefulWidget {
+  const StudentBottomNavigation({
     super.key,
   });
 
   @override
-  State<BottomNavigation> createState() => _BottomNavigationState();
+  State<StudentBottomNavigation> createState() =>
+      _StudentBottomNavigationState();
 }
 
-class _BottomNavigationState extends State<BottomNavigation> {
+class _StudentBottomNavigationState extends State<StudentBottomNavigation> {
   int currentIndex = 0;
   final pages = [
     StudentHome(),

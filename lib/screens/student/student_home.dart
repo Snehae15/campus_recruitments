@@ -1,7 +1,8 @@
-import 'package:campus_recruitment/screens/student/job application.dart';
-import 'package:campus_recruitment/screens/student/notificaiton.dart';
+import 'package:campus_recruitment/screens/student/job%20application.dart';
+import 'package:campus_recruitment/screens/student/saved%20jobs.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StudentHome extends StatefulWidget {
   const StudentHome({Key? key});
@@ -13,6 +14,11 @@ class StudentHome extends StatefulWidget {
 class _StudentHomeState extends State<StudentHome> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   TextEditingController _searchController = TextEditingController();
+
+  String userid = '';
+  String userEmail = '';
+  String userName = '';
+  List<Map<String, String>> savedJobs = [];
 
   @override
   Widget build(BuildContext context) {
@@ -41,22 +47,23 @@ class _StudentHomeState extends State<StudentHome> {
                           ),
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 115.0),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.notification_add_outlined,
-                            color: Colors.blue,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const NotificationPage(),
-                              ),
-                            );
-                          },
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(
+                          Icons.save,
+                          color: Colors.blue,
                         ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SavedJobs(
+                                savedJobs: savedJobs,
+                                userid: userid,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -124,7 +131,7 @@ class _StudentHomeState extends State<StudentHome> {
                   ),
                 ),
                 Container(
-                  height: constraints.maxWidth > 250 ? 210 : 250,
+                  height: constraints.maxWidth > 280 ? 210 : 250,
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('jobs')
@@ -158,12 +165,8 @@ class _StudentHomeState extends State<StudentHome> {
                             child: Card(
                               elevation: 5,
                               child: Container(
-                                height: constraints.maxWidth > 500
-                                    ? 180
-                                    : constraints.maxWidth * 0.5,
-                                width: constraints.maxWidth > 600
-                                    ? 180
-                                    : constraints.maxWidth * 0.7,
+                                height: 500,
+                                width: 280,
                                 color: Colors.white,
                                 child: Column(
                                   children: [
@@ -216,8 +219,11 @@ class _StudentHomeState extends State<StudentHome> {
                                           child: GestureDetector(
                                             onTap: () async {
                                               // Handle saving job
+                                              String jobId =
+                                                  filteredJobs[index].id;
+                                              saveJob(jobId);
                                             },
-                                            child: Icon(Icons.confirmation_num),
+                                            child: Icon(Icons.save),
                                           ),
                                         ),
                                       ],
@@ -261,7 +267,7 @@ class _StudentHomeState extends State<StudentHome> {
                                             MaterialPageRoute(
                                               builder: (context) =>
                                                   JobApplication(
-                                                userId: loggedInUserId,
+                                                jobId: filteredJobs[index].id,
                                                 jobTitle: job['jobTitle'],
                                                 address: job['address'],
                                                 companyname: job['companyname'],
@@ -309,7 +315,7 @@ class _StudentHomeState extends State<StudentHome> {
                   ),
                 ),
                 Container(
-                  height: constraints.maxWidth > 600 ? 230 : 280,
+                  height: constraints.maxWidth > 500 ? 230 : 280,
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('events')
@@ -338,39 +344,19 @@ class _StudentHomeState extends State<StudentHome> {
                             child: Card(
                               elevation: 5,
                               child: Container(
-                                height: constraints.maxWidth > 300
-                                    ? 100
-                                    : constraints.maxWidth * 0.2,
-                                width: constraints.maxWidth > 500
-                                    ? 250
-                                    : constraints.maxWidth * 0.7,
+                                height: 250,
+                                width: 250,
                                 color: Colors.white,
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Stack(
                                       children: [
-                                        Image.asset(
-                                          'assets/events.jpg',
+                                        Image.network(
+                                          event['eventImageURL'],
                                           height: 150,
-                                          width: double.infinity,
+                                          width: 150,
                                           fit: BoxFit.fill,
-                                        ),
-                                        Positioned(
-                                          top: 8,
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Event Date: ${event['eventDate']}',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
                                         ),
                                       ],
                                     ),
@@ -400,6 +386,12 @@ class _StudentHomeState extends State<StudentHome> {
                                               fontSize: 16,
                                             ),
                                           ),
+                                          Text(
+                                            'Date: ${event['eventDate']}',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -419,5 +411,21 @@ class _StudentHomeState extends State<StudentHome> {
         },
       ),
     );
+  }
+
+  Future<void> saveJob(String jobId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('userId');
+
+    if (userId != null && userId.isNotEmpty) {
+      CollectionReference savedJobsRef =
+          FirebaseFirestore.instance.collection('saved_jobs');
+      await savedJobsRef.add({
+        'userId': userId,
+        'jobId': jobId,
+      });
+    } else {
+      print('User ID is not available in shared preferences!');
+    }
   }
 }

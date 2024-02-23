@@ -30,6 +30,8 @@ class _StudentProfile2State extends State<StudentProfile2> {
   late String _experience;
   late String _qualification;
   late String _skills;
+  bool _isImageLoading = false;
+  bool _isResumeLoading = false;
 
   Future<void> _getUserDetails() async {
     try {
@@ -70,15 +72,17 @@ class _StudentProfile2State extends State<StudentProfile2> {
 
   Future<void> _updateUserDetails() async {
     try {
+      String profilePicUrl = '';
       if (pickedImage != null) {
         // Upload profile picture to Firebase Storage
-        String profilePicUrl = await _uploadFile(pickedImage!, 'profile_pics');
+        profilePicUrl = await _uploadFile(pickedImage!, 'profile_pics');
         _updateUserProfilePic(profilePicUrl);
       }
 
+      String resumeUrl = '';
       if (resumeFile != null) {
         // Upload resume to Firebase Storage
-        String resumeUrl = await _uploadFile(resumeFile!, 'resumes');
+        resumeUrl = await _uploadFile(resumeFile!, 'resumes');
         _updateUserResume(resumeUrl);
       }
 
@@ -97,7 +101,17 @@ class _StudentProfile2State extends State<StudentProfile2> {
         'experience': _experience,
         'qualification': _qualification,
         'skills': _skills,
+        'profilePicUrl': profilePicUrl, // Add profile picture URL to Firestore
+        'resumeUrl': resumeUrl, // Add resume URL to Firestore
       });
+
+      // Navigate back to previous screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const StudentProfile(),
+        ),
+      );
     } catch (e) {
       print('Error updating user details: $e');
     }
@@ -132,21 +146,37 @@ class _StudentProfile2State extends State<StudentProfile2> {
   }
 
   Future<void> pickImage() async {
+    setState(() {
+      _isImageLoading = true;
+    });
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         pickedImage = File(pickedFile.path);
+        _isImageLoading = false;
+      });
+    } else {
+      setState(() {
+        _isImageLoading = false;
       });
     }
   }
 
   Future<void> pickResume() async {
+    setState(() {
+      _isResumeLoading = true;
+    });
     FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
       File file = File(result.files.single.path ?? "");
       setState(() {
         resumeFile = file;
+        _isResumeLoading = false;
+      });
+    } else {
+      setState(() {
+        _isResumeLoading = false;
       });
     }
   }
@@ -182,30 +212,6 @@ class _StudentProfile2State extends State<StudentProfile2> {
               ),
               child: Stack(
                 children: [
-                  Positioned(
-                    top: 16,
-                    right: 16,
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const StudentProfile(),
-                          ),
-                        );
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: Colors.white,
-                      ),
-                      child: const Text(
-                        "Done",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
-                  ),
                   Center(
                     child: GestureDetector(
                       onTap: () {
@@ -219,20 +225,22 @@ class _StudentProfile2State extends State<StudentProfile2> {
                           color: Colors.white,
                         ),
                         child: Center(
-                          child: pickedImage != null
-                              ? ClipOval(
-                                  child: Image.file(
-                                    pickedImage!,
-                                    fit: BoxFit.cover,
-                                    width: 150,
-                                    height: 150,
-                                  ),
-                                )
-                              : const Icon(
-                                  Icons.add,
-                                  color: Colors.blue,
-                                  size: 40,
-                                ),
+                          child: _isImageLoading
+                              ? CircularProgressIndicator()
+                              : pickedImage != null
+                                  ? ClipOval(
+                                      child: Image.file(
+                                        pickedImage!,
+                                        fit: BoxFit.cover,
+                                        width: 150,
+                                        height: 150,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.add,
+                                      color: Colors.blue,
+                                      size: 40,
+                                    ),
                         ),
                       ),
                     ),
@@ -406,12 +414,6 @@ class _StudentProfile2State extends State<StudentProfile2> {
                   ElevatedButton(
                     onPressed: () {
                       _updateUserDetails();
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const StudentProfile(),
-                        ),
-                      );
                     },
                     child: const Text('Done'),
                   ),

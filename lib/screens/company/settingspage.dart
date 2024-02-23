@@ -14,6 +14,7 @@ class CompanySettingsPage extends StatefulWidget {
 class _CompanySettingsPageState extends State<CompanySettingsPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String companyname = '';
+  String companyProfileImageUrl = '';
   bool isNotificationEnabled = false;
   late Timer _timer;
 
@@ -21,8 +22,6 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
   void initState() {
     super.initState();
     _loadCompanyInfo();
-
-    // Example of a timer that triggers setState
     _timer = Timer.periodic(Duration(seconds: 1), (Timer timer) {
       _updateStateEverySecond();
     });
@@ -42,6 +41,8 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
           if (mounted) {
             setState(() {
               companyname = snapshot['companyname'];
+              companyProfileImageUrl =
+                  snapshot['profileImageUrl']; // Load profile image URL
             });
           }
         }
@@ -74,15 +75,12 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
 
   void _updateStateEverySecond() {
     if (mounted) {
-      setState(() {
-        // Your state update logic here
-      });
+      setState(() {});
     }
   }
 
   @override
   void dispose() {
-    // Cancel the timer to avoid calling setState after the widget is disposed
     _timer.cancel();
     super.dispose();
   }
@@ -107,9 +105,12 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
             padding: const EdgeInsets.all(8.0),
             child: Card(
               child: ListTile(
-                leading: const CircleAvatar(
-                  backgroundImage: AssetImage('assets/person.png'),
-                ),
+                leading: companyProfileImageUrl.isNotEmpty
+                    ? Image.network(
+                        companyProfileImageUrl) // Display company profile image if available
+                    : const CircleAvatar(
+                        backgroundImage: AssetImage('assets/person.png'),
+                      ),
                 title: Text(companyname),
               ),
             ),
@@ -133,19 +134,6 @@ class _CompanySettingsPageState extends State<CompanySettingsPage> {
               activeColor: Colors.purpleAccent,
             ),
           ),
-          // ListTile(
-          //   leading: const Icon(
-          //     Icons.poll_rounded,
-          //     color: Colors.purpleAccent,
-          //   ),
-          //   title: const Text('Feedback'),
-          //   trailing: const Icon(
-          //     Icons.arrow_forward,
-          //     color: Colors.grey,
-          //     size: 30,
-          //   ),
-          //   onTap: _navigateToFeedbackPage,
-          // ),
           ListTile(
             leading: const Icon(
               Icons.logout,

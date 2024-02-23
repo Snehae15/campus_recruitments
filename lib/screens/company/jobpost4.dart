@@ -176,6 +176,7 @@
 //   }
 // }
 
+import 'package:campus_recruitment/screens/company/bottomnavigation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -334,7 +335,12 @@ class _Jobpost4State extends State<Jobpost4> {
                   gravity: ToastGravity.BOTTOM,
                 );
 
-                Navigator.pushReplacementNamed(context, '/companyhome');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CompanyBottomNavigations(),
+                  ),
+                );
               } catch (e) {
                 print('Error updating document: $e');
               }

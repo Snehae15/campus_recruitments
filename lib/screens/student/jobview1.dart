@@ -187,14 +187,13 @@ class _JObview1State extends State<JObview1> {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) => JobApplication(
-                                              userId:
-                                                  'pass_logged_user_id_here',
                                               address:
                                                   'pass_logged_user_address_here',
                                               jobTitle:
                                                   widget.jobDetails.jobTitle,
                                               companyname:
                                                   widget.jobDetails.companyname,
+                                              jobId: '',
                                             )),
                                   );
                                 },

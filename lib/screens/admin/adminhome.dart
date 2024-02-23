@@ -120,20 +120,28 @@ class _AdminHomeState extends State<AdminHome> {
                     eventLocation = value;
                   },
                 ),
+                TextButton(
+                  child: Text('Pick Image'),
+                  onPressed: () async {
+                    pickedImage =
+                        await picker.pickImage(source: ImageSource.gallery);
+                  },
+                ),
               ],
             ),
           ),
           actions: <Widget>[
-            // TextButton(
-            //   child: Text('Pick Image'),
-            //   onPressed: () async {
-            //     pickedImage =
-            //         await picker.pickImage(source: ImageSource.gallery);
-            //   },
-            // ),
             TextButton(
               child: Text('Add'),
               onPressed: () async {
+                if (eventName.isEmpty || eventLocation.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Please fill all required fields.'),
+                  ));
+                  return;
+                }
+
+                String downloadURL = '';
                 if (pickedImage != null) {
                   Reference storageReference = FirebaseStorage.instance
                       .ref()
@@ -142,18 +150,17 @@ class _AdminHomeState extends State<AdminHome> {
                       storageReference.putFile(File(pickedImage!.path));
 
                   await uploadTask.whenComplete(() async {
-                    String downloadURL =
-                        await storageReference.getDownloadURL();
-
-                    await FirebaseFirestore.instance.collection('events').add({
-                      'eventName': eventName,
-                      'eventDate': eventDate,
-                      'eventTime': eventTime.format(context),
-                      'eventLocation': eventLocation,
-                      'eventImageURL': downloadURL,
-                    });
+                    downloadURL = await storageReference.getDownloadURL();
                   });
                 }
+
+                await FirebaseFirestore.instance.collection('events').add({
+                  'eventName': eventName,
+                  'eventDate': DateFormat('yyyy-MM-dd').format(eventDate),
+                  'eventTime': eventTime.format(context),
+                  'eventLocation': eventLocation,
+                  'eventImageURL': downloadURL,
+                });
 
                 Navigator.of(context).pop();
               },
@@ -238,40 +245,58 @@ class _AdminHomeState extends State<AdminHome> {
 
                   List<Map<String, dynamic>> events = snapshot.data!;
 
-                  return // Inside your ListView.builder
-                      ListView.builder(
+                  return ListView.builder(
                     itemBuilder: (context, index) {
                       Map<String, dynamic> event = events[index];
 
                       return Card(
                         child: ListTile(
-                          leading: Container(
-                            width: 90,
-                            height: 90,
-                            decoration: const BoxDecoration(
-                              image: DecorationImage(
-                                image: AssetImage('assets/events.jpg'),
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
+                          leading: event['eventImageURL'] != null
+                              ? Image.network(
+                                  event['eventImageURL'],
+                                  width: 90,
+                                  height: 90,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  width: 90,
+                                  height: 90,
+                                  color: Colors.grey,
+                                  child: Icon(
+                                    Icons.image,
+                                    color: Colors.white,
+                                  ),
+                                ),
                           title: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Event Name: ${event['eventName']}',
                                 style: TextStyle(
-                                    fontSize: 20, color: Colors.black),
+                                  fontSize: 20,
+                                  color: Colors.black,
+                                ),
                               ),
                               Text(
                                 'Event Date: ${event['eventDate']}',
                                 style: TextStyle(
-                                    fontSize: 16, color: Colors.black),
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
+                              ),
+                              Text(
+                                'Event Time: ${event['eventTime']}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
                               ),
                               Text(
                                 'Event Location: ${event['eventLocation']}',
                                 style: TextStyle(
-                                    fontSize: 16, color: Colors.black),
+                                  fontSize: 16,
+                                  color: Colors.black,
+                                ),
                               ),
                             ],
                           ),
@@ -286,20 +311,11 @@ class _AdminHomeState extends State<AdminHome> {
           ],
         ),
       ),
-      floatingActionButton: MouseRegion(
-        onHover: (event) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Add Event'),
-            ),
-          );
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddEventDialog(context);
         },
-        child: FloatingActionButton(
-          onPressed: () {
-            _showAddEventDialog(context);
-          },
-          child: Icon(Icons.add),
-        ),
+        child: Icon(Icons.add),
       ),
     );
   }

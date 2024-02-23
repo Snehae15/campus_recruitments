@@ -1,3 +1,4 @@
+import 'package:campus_recruitment/screens/company/Viewresume.dart';
 import 'package:campus_recruitment/screens/company/notificationpage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -87,55 +88,50 @@ class _StudentListState extends State<StudentList> {
 
                 appliedJobs = snapshot.data!.docs;
 
-                return appliedJobs.isEmpty
-                    ? const Center(
-                        child: Text('No Applications'),
-                      )
-                    : ListView.builder(
-                        itemCount: appliedJobs.length,
-                        itemBuilder: (context, index) {
-                          var username = appliedJobs[index]['username'];
-                          var jobTitle = appliedJobs[index]['jobName'];
-
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Card(
-                              shape: const RoundedRectangleBorder(
-                                side: BorderSide(color: Colors.grey),
-                              ),
-                              child: ListTile(
-                                leading: const CircleAvatar(
-                                  backgroundColor: Colors.purpleAccent,
-                                  child: Icon(Icons.person,
-                                      size: 30, color: Colors.white),
+                return ListView.builder(
+                  itemCount: appliedJobs.length,
+                  itemBuilder: (context, index) {
+                    var username = appliedJobs[index]['username'];
+                    var jobName = appliedJobs[index]['jobName'];
+                    var userId = appliedJobs[index]['userId'];
+                    print('$userId');
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Card(
+                        shape: const RoundedRectangleBorder(
+                          side: BorderSide(color: Colors.grey),
+                        ),
+                        child: ListTile(
+                          leading: const CircleAvatar(
+                            backgroundColor: Colors.purpleAccent,
+                            child: Icon(Icons.person,
+                                size: 30, color: Colors.white),
+                          ),
+                          title: Text(username),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(jobName),
+                            ],
+                          ),
+                          trailing: const Icon(Icons.keyboard_arrow_right),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CompanyViewStudentProfile(
+                                  username: username,
+                                  jobName: jobName,
+                                  userId: userId,
                                 ),
-                                title: Text(username),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(jobTitle),
-                                    // Add any other details you want to display here
-                                  ],
-                                ),
-                                trailing:
-                                    const Icon(Icons.keyboard_arrow_right),
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          CompanyViewStudentProfile(
-                                        username: username,
-                                        jobTitle: jobTitle,
-                                      ),
-                                    ),
-                                  );
-                                },
                               ),
-                            ),
-                          );
-                        },
-                      );
+                            );
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -181,21 +177,22 @@ class StudentSearchDelegate extends SearchDelegate<String> {
   Widget buildSuggestions(BuildContext context) {
     final suggestionList = appliedJobs
         .where((appliedJob) =>
-            appliedJob['jobTitle'].toLowerCase().contains(query.toLowerCase()))
+            appliedJob['jobName'].toLowerCase().contains(query.toLowerCase()))
         .toList();
 
     return ListView.builder(
       itemCount: suggestionList.length,
       itemBuilder: (context, index) {
         return ListTile(
-          title: Text(suggestionList[index]['jobTitle']),
+          title: Text(suggestionList[index]['jobName']),
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CompanyViewStudentProfile(
                   username: suggestionList[index]['username'],
-                  jobTitle: suggestionList[index]['jobTitle'],
+                  jobName: suggestionList[index]['jobName'],
+                  userId: suggestionList[index]['userId'],
                 ),
               ),
             );
@@ -208,12 +205,14 @@ class StudentSearchDelegate extends SearchDelegate<String> {
 
 class CompanyViewStudentProfile extends StatefulWidget {
   final String username;
-  final String jobTitle;
+  final String jobName;
+  final String userId;
 
   const CompanyViewStudentProfile({
     Key? key,
     required this.username,
-    required this.jobTitle,
+    required this.jobName,
+    required this.userId,
   }) : super(key: key);
 
   @override
@@ -223,16 +222,17 @@ class CompanyViewStudentProfile extends StatefulWidget {
 
 class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
   var dob = TextEditingController();
-  var phone_number = TextEditingController();
+  var phoneNumber = TextEditingController();
   var age = TextEditingController();
   var gender = TextEditingController();
-  var cgpa = TextEditingController();
+  var experience = TextEditingController();
   var qualification = TextEditingController();
   var certification = TextEditingController();
   var skills = TextEditingController();
   var username = '';
   var field = '';
   var email = '';
+  var userId = '';
 
   @override
   void initState() {
@@ -243,28 +243,27 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
   Future<void> fetchUserDetails() async {
     try {
       final userSnapshot = await FirebaseFirestore.instance
-          .collection('applied_jobs')
-          .where('username', isEqualTo: widget.username)
-          .where('jobTitle', isEqualTo: widget.jobTitle)
+          .collection('users')
+          .doc(widget.userId)
           .get();
 
-      if (userSnapshot.docs.isNotEmpty) {
-        print('Entered to usersnapshot');
-        final userData = userSnapshot.docs.first.data() as Map<String, dynamic>;
+      if (userSnapshot.exists) {
+        final userData = userSnapshot.data() as Map<String, dynamic>;
 
-        username = userData['username'] ?? '';
-        field = userData['field'] ?? '';
-        email = userData['email'] ?? '';
-        dob.text = userData['dob'] ?? '';
-        phone_number.text = userData['phone'] ?? '';
-        gender.text = userData['gender'] ?? '';
-        cgpa.text = userData['cgpa'] ?? '';
-        qualification.text = userData['qualification'] ?? '';
-        certification.text = userData['certification'] ?? '';
-        skills.text = userData['skills'] ?? '';
+        setState(() {
+          username = userData['username'] ?? '';
+          field = userData['field'] ?? '';
+          email = userData['email'] ?? '';
+          dob.text = userData['dob'] ?? '';
+          phoneNumber.text = userData['phoneNumber'] ?? '';
+          gender.text = userData['gender'] ?? '';
+          experience.text = userData['experience'] ?? '';
+          qualification.text = userData['qualification'] ?? '';
+          certification.text = userData['certification'] ?? '';
+          skills.text = userData['skills'] ?? '';
+        });
       } else {
-        print(
-            'No data found for username: ${widget.username} and jobTitle: ${widget.jobTitle}');
+        print('No data found for userId: ${widget.userId}');
       }
     } catch (error) {
       print('Error fetching user details: $error');
@@ -273,17 +272,15 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
 
   Future<void> _shortListCandidate() async {
     try {
-      // Update the status field to 'shortlisted' in Firestore
       await FirebaseFirestore.instance
           .collection('applied_jobs')
           .where('username', isEqualTo: widget.username)
-          .where('jobTitle', isEqualTo: widget.jobTitle)
+          .where('jobName', isEqualTo: widget.jobName)
           .get()
           .then((QuerySnapshot querySnapshot) {
         if (querySnapshot.docs.isNotEmpty) {
           querySnapshot.docs.first.reference.update({'status': 'shortlisted'});
           showToast('Candidate shortlisted');
-          // Optionally, you can perform any other actions after shortlisting
         }
       });
     } catch (error) {
@@ -293,17 +290,15 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
 
   Future<void> _rejectCandidate() async {
     try {
-      // Update the status field to 'rejected' in Firestore
       await FirebaseFirestore.instance
           .collection('applied_jobs')
           .where('username', isEqualTo: widget.username)
-          .where('jobTitle', isEqualTo: widget.jobTitle)
+          .where('jobName', isEqualTo: widget.jobName)
           .get()
           .then((QuerySnapshot querySnapshot) {
         if (querySnapshot.docs.isNotEmpty) {
           querySnapshot.docs.first.reference.update({'status': 'rejected'});
           showToast('Candidate rejected');
-          // Optionally, you can perform any other actions after rejecting
         }
       });
     } catch (error) {
@@ -326,183 +321,196 @@ class _CompanyViewStudentProfileState extends State<CompanyViewStudentProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder(
-          future: fetchUserDetails(),
-          builder: (context, snapshot) {
-            print('DOB : ${dob.text}');
-            print('Phone Number : ${phone_number.text}');
-            return snapshot.connectionState == ConnectionState.waiting
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : Padding(
-                    padding: const EdgeInsets.only(top: 100.0),
-                    child: ListView(
-                      children: [
-                        Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 30),
-                              child: SizedBox(
-                                height: 100,
-                                width: 300,
-                                child: Image.asset('assets/person.png'),
-                              ),
-                            ),
-                            Text(
-                              username,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.normal,
-                                fontSize: 30,
-                              ),
-                            ),
-                            Text(
-                              field,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            Text(
-                              email,
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: TextFormField(
-                                readOnly: true,
-                                controller: dob,
-                                decoration: InputDecoration(
-                                  labelText: 'DOB',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  hintText: 'Date of Birth',
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: TextFormField(
-                                readOnly: true,
-                                controller: phone_number,
-                                decoration: InputDecoration(
-                                  labelText: 'Phonenumber',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  hintText: 'Phone No',
-                                ),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: TextFormField(
-                                readOnly: true,
-                                controller: gender,
-                                decoration: InputDecoration(
-                                  labelText: 'Gender',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  hintText: 'Gender',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(15.0),
-                          child: TextFormField(
-                            readOnly: true,
-                            controller: cgpa,
-                            decoration: InputDecoration(
-                              labelText: 'CGPA',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              hintText: 'CGPA',
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(15.0),
-                          child: TextFormField(
-                            readOnly: true,
-                            controller: qualification,
-                            decoration: InputDecoration(
-                              labelText: 'Qualification',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              hintText: 'Qualification',
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(15.0),
-                          child: TextFormField(
-                            readOnly: true,
-                            controller: skills,
-                            decoration: InputDecoration(
-                              labelText: 'Skills',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              hintText: 'Skills',
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: ElevatedButton(
-                                onPressed: () {},
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.purple,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: const Text('View Resume'),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.all(15.0),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  _shortListCandidate();
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.purple,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                                child: const Text('ShortList'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(15.0),
-                          child: ElevatedButton(
-                            onPressed: _rejectCandidate,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: const Text('Reject'),
-                          ),
-                        ),
-                      ],
+      body: Padding(
+        padding: const EdgeInsets.only(top: 100.0),
+        child: ListView(
+          children: [
+            Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 30),
+                  child: SizedBox(
+                    height: 100,
+                    width: 300,
+                    child: Image.asset('assets/person.png'),
+                  ),
+                ),
+                Text(
+                  username,
+                  style: TextStyle(
+                    fontWeight: FontWeight.normal,
+                    fontSize: 30,
+                  ),
+                ),
+                Text(
+                  field,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                Text(
+                  email,
+                  style: TextStyle(color: Colors.grey),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 15.0),
+                  child: Text('DOB'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: TextFormField(
+                    readOnly: true,
+                    controller: dob,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      hintText: 'Date of Birth',
                     ),
-                  );
-          }),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 15.0),
+                  child: Text('Phone Number'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: TextFormField(
+                    readOnly: true,
+                    controller: phoneNumber,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      hintText: 'Phone No',
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 15.0),
+                  child: Text('Gender'),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: TextFormField(
+                    readOnly: true,
+                    controller: gender,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      hintText: 'Gender',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 15.0),
+              child: Text('Experience'),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                readOnly: true,
+                controller: experience,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  hintText: 'Experience',
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 15.0),
+              child: Text('Qualification'),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                readOnly: true,
+                controller: qualification,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  hintText: 'Qualification',
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 15.0),
+              child: Text('Skill'),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: TextFormField(
+                readOnly: true,
+                controller: skills,
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  hintText: 'Skills',
+                ),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) =>
+                                ViewResume(userId: widget.userId)),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('View Resume'),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(15.0),
+                  child: ElevatedButton(
+                    onPressed: _shortListCandidate,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text('ShortList'),
+                  ),
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(15.0),
+              child: ElevatedButton(
+                onPressed: _rejectCandidate,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Reject'),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

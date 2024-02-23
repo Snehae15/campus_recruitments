@@ -144,7 +144,8 @@ class _SignUpState extends State<SignUp> {
       if (userCredential.user != null) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const BottomNavigation()),
+          MaterialPageRoute(
+              builder: (context) => const StudentBottomNavigation()),
         );
       } else {
         _showErrorToast("Invalid username or password");

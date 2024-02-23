@@ -49,7 +49,7 @@ class _PersonalDetailsState extends State<PersonalDetails> {
               _experience = data['experience'] ?? '';
               _qualification = data['qualification'] ?? '';
               _skills = data['skills'] ?? '';
-              _isLoading = false; // set loading to false once data is fetched
+              _isLoading = false;
             });
           } else {
             print('User data not found in the snapshot');

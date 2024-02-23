@@ -1,12 +1,11 @@
-// ignore_for_file: use_build_context_synchronously
-
 import 'package:campus_recruitment/screens/company/bottomnavigation.dart';
 import 'package:campus_recruitment/screens/company/signup.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CompanyLogIn extends StatefulWidget {
-  const CompanyLogIn({super.key});
+  const CompanyLogIn({Key? key}) : super(key: key);
 
   @override
   State<CompanyLogIn> createState() => _CompanyLogInState();
@@ -16,7 +15,7 @@ class _CompanyLogInState extends State<CompanyLogIn> {
   final _formkey = GlobalKey<FormState>();
   TextEditingController companyemailController = TextEditingController();
   TextEditingController passwordController = TextEditingController();
-  bool obscurePassword = true; // Initially obscure the password
+  bool obscurePassword = true;
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +158,7 @@ class _CompanyLogInState extends State<CompanyLogIn> {
                           const Padding(
                             padding: EdgeInsets.all(10.0),
                             child: Text(
-                              "Don't have an Account? Create one using",
+                              "Don't have an Account? ",
                               style: TextStyle(
                                   color: Colors.black, fontSize: 15.0),
                             ),
@@ -202,18 +201,24 @@ class _CompanyLogInState extends State<CompanyLogIn> {
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
-      // If the above line doesn't throw an exception, the login is successful.
+      String companyId = userCredential.user!.uid;
+
+      await saveCompanyId(companyId);
+
       return true;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found' || e.code == 'wrong-password') {
-        // Handle invalid email or password
         print('Invalid email or password');
       } else {
-        // Handle other exceptions
         print('Error: $e');
       }
       return false;
     }
+  }
+
+  Future<void> saveCompanyId(String companyId) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('companyId', companyId);
   }
 
   void _showErrorSnackBar(String errorMessage) {
